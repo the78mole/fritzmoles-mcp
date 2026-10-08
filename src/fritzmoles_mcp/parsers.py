@@ -201,11 +201,17 @@ def parse_deflections(xml: bytes | str) -> list[dict[str, Any]]:
                 "forward_to": _text(item, "DeflectionToNumber"),
                 "mode": mode,
                 "mode_description": DEFLECTION_MODES.get(mode, mode),
+                "kind": deflection_kind(mode),
                 "outgoing": _text(item, "Outgoing"),
                 "phonebook_id": _int(_text(item, "PhonebookID")),
             }
         )
     return result
+
+
+def deflection_kind(mode: str) -> str:
+    """Classify a deflection: FRITZ!OS stores web-UI call blocks as deflections with mode ``eNoSignal``."""
+    return "block" if mode == "eNoSignal" else "forward"
 
 
 def parse_phonebook(xml: bytes | str) -> dict[str, Any]:

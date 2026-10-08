@@ -73,6 +73,8 @@ def test_parse_deflections():
     assert rules[0]["forward_to"] == "987456"
     assert rules[1]["enabled"] is False
     assert rules[1]["mode_description"] == "when busy"
+    assert rules[0]["kind"] == "forward"
+    assert parsers.deflection_kind("eNoSignal") == "block"
     assert rules[1]["phonebook_id"] is None
 
 

@@ -11,7 +11,7 @@ import re
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any, Protocol
-from urllib.parse import urlencode, urlparse
+from urllib.parse import parse_qs, urlencode, urlparse
 
 from . import parsers
 from .config import FritzConfig
@@ -76,11 +76,6 @@ class FritzTelephony:
     def _action(self, service: str, action: str, **arguments: Any) -> dict[str, Any]:
         return self._fc.call_action(service, action, arguments=arguments)
 
-    def _absolute(self, path_or_url: str) -> str:
-        if urlparse(path_or_url).scheme:
-            return path_or_url
-        return f"{self._base_url}{path_or_url}"
-
     # ------------------------------------------------------------------ call list
 
     def get_calls(self, kind: str = "all", days: int | None = None, max_entries: int | None = None) -> dict[str, Any]:
@@ -142,8 +137,14 @@ class FritzTelephony:
     def set_answering_machine_enabled(self, index: int, enabled: bool) -> None:
         self._action(TAM, "SetEnable", NewIndex=index, NewEnable=enabled)
 
-    def list_voicemails(self, index: int = 0, max_entries: int | None = None, only_new: bool = False) -> list[dict]:
+    def _voicemail_list_url(self, index: int) -> str:
         url = self._action(TAM, "GetMessageList", NewIndex=index)["NewURL"]
+        if not url:
+            raise RuntimeError(f"answering machine {index} returned no message list URL")
+        return url
+
+    def list_voicemails(self, index: int = 0, max_entries: int | None = None, only_new: bool = False) -> list[dict]:
+        url = self._voicemail_list_url(index)
         messages = parsers.parse_tam_messages(self._fetch(_with_query(url, max=max_entries)))
         if only_new:
             messages = [m for m in messages if m["new"]]
@@ -156,14 +157,24 @@ class FritzTelephony:
         self._action(TAM, "DeleteMessage", NewIndex=index, NewMessageIndex=message_index)
 
     def download_voicemail(self, index: int, message_index: int, target_dir: Path) -> dict[str, Any]:
-        """Download the recording of one voicemail message to ``target_dir`` and return its path."""
-        message = next((m for m in self.list_voicemails(index) if m["index"] == message_index), None)
+        """Download the recording of one voicemail message to ``target_dir`` and return its path.
+
+        Verified against FRITZ!OS 7.62: the recording is served by ``download.lua`` on the TR-064
+        port, but only together with the session id the box put into the message list URL.
+        """
+        list_url = self._voicemail_list_url(index)
+        messages = parsers.parse_tam_messages(self._fetch(list_url))
+        message = next((m for m in messages if m["index"] == message_index), None)
         if message is None:
             raise LookupError(f"answering machine {index} has no message with index {message_index}")
         path = message.get("recording_path")
         if not path:
             raise LookupError("this message has no recording path")
-        url = self._absolute(path if "download.lua" in path else f"/download.lua?path={path}")
+        if "download.lua" not in path:
+            path = f"/download.lua?path={path}"
+        parsed = urlparse(list_url)
+        sid = parse_qs(parsed.query).get("sid", [""])[0]
+        url = _with_query(f"{parsed.scheme}://{parsed.netloc}{path}", sid=sid)
         data = self._fetch(url)
         target_dir = target_dir.expanduser()
         target_dir.mkdir(parents=True, exist_ok=True)
@@ -180,8 +191,16 @@ class FritzTelephony:
         return parsers.parse_phonebook(self._fetch(url))["contacts"]
 
     def get_call_barring_by_number(self, number: str) -> dict[str, Any]:
-        xml = self._action(ONTEL, "GetCallBarringEntryByNum", NewNumber=number.strip())["NewPhonebookEntryData"]
-        return parsers.parse_contact_entry(xml)
+        """Return the barring entry for ``number`` plus ``blocked``; ``blocked: False`` when there is none."""
+        try:
+            xml = self._action(ONTEL, "GetCallBarringEntryByNum", NewNumber=number.strip())["NewPhonebookEntryData"]
+        except Exception as exc:
+            if "714" in str(exc):  # NoSuchEntryInArray: the number is simply not on the list
+                return {"blocked": False, "number": number.strip()}
+            raise
+        entry = parsers.parse_contact_entry(xml)
+        entry["blocked"] = True
+        return entry
 
     def add_call_barring(self, number: str, name: str = "") -> int:
         """Block an incoming number. Returns the new entry's unique id."""
@@ -224,6 +243,7 @@ class FritzTelephony:
             "forward_to": info.get("NewDeflectionToNumber", ""),
             "mode": mode,
             "mode_description": parsers.DEFLECTION_MODES.get(mode, mode),
+            "kind": parsers.deflection_kind(mode),
             "outgoing": info.get("NewOutgoing", ""),
             "phonebook_id": info.get("NewPhonebookID"),
         }

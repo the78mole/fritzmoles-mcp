@@ -98,7 +98,7 @@ def test_voicemails(connection, client, fetch):
 
 def test_download_voicemail(client, fetch, tmp_path: Path):
     result = client.download_voicemail(0, 3, tmp_path / "vm")
-    assert fetch.urls[-1] == "http://fritz.box:49000/download.lua?path=/data/tam/rec/rec.0.003"
+    assert fetch.urls[-1] == "http://fritz.box:49000/download.lua?path=/data/tam/rec/rec.0.003&sid=abc"
     file = Path(result["file"])
     assert file.read_bytes() == b"RIFF-fake-wav"
     assert file.name == "tam0_msg3_2011-09-23T08-13_555123456.wav"
@@ -112,6 +112,21 @@ def test_download_voicemail_without_path(connection, fetch, tmp_path):
     client = FritzTelephony(connection, fetch, base_url="http://fritz.box:49000")
     with pytest.raises(LookupError, match="no recording"):
         client.download_voicemail(0, 1, tmp_path)
+
+
+def test_download_voicemail_with_full_download_path(connection, fetch, tmp_path):
+    fetch.pages["http://fritz.box:49000/tammessages.lua"] = (
+        b"<Root><Message><Index>1</Index><Path>/download.lua?path=/data/tam/rec/rec.0.001</Path></Message></Root>"
+    )
+    client = FritzTelephony(connection, fetch, base_url="http://fritz.box:49000")
+    assert client.download_voicemail(0, 1, tmp_path)["bytes"] > 0
+    assert fetch.urls[-1] == "http://fritz.box:49000/download.lua?path=/data/tam/rec/rec.0.001&sid=abc"
+
+
+def test_voicemail_list_url_missing(fetch):
+    fc = FakeConnection({("X_AVM-DE_TAM1", "GetMessageList"): {"NewURL": ""}})
+    with pytest.raises(RuntimeError, match="no message list URL"):
+        FritzTelephony(fc, fetch).list_voicemails(0)
 
 
 def test_call_barrings(connection, client):
@@ -136,7 +151,13 @@ def test_call_barrings(connection, client):
     connection.responses[("X_AVM-DE_OnTel1", "GetCallBarringEntryByNum")] = {
         "NewPhonebookEntryData": "<contact><person><realName>W</realName></person><uniqueid>42</uniqueid></contact>"
     }
-    assert client.get_call_barring_by_number("0800111222")["uniqueid"] == 42
+    entry = client.get_call_barring_by_number("0800111222")
+    assert entry["uniqueid"] == 42 and entry["blocked"] is True
+    connection.responses[("X_AVM-DE_OnTel1", "GetCallBarringEntryByNum")] = RuntimeError("UPnPError: errorCode: 714")
+    assert client.get_call_barring_by_number("1") == {"blocked": False, "number": "1"}
+    connection.responses[("X_AVM-DE_OnTel1", "GetCallBarringEntryByNum")] = RuntimeError("UPnPError: errorCode: 820")
+    with pytest.raises(RuntimeError, match="820"):
+        client.get_call_barring_by_number("1")
 
 
 def test_call_forwardings(connection, client):

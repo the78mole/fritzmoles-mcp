@@ -28,6 +28,7 @@ graph LR
 Die Kommunikation läuft über die offizielle, von AVM dokumentierte
 [TR-064-Schnittstelle](https://fritz.com/service/schnittstellen/) (via
 [`fritzconnection`](https://github.com/kbr/fritzconnection)). Kein Scraping der Weboberfläche.
+Getestet gegen eine FRITZ!Box 7490 mit FRITZ!OS 7.62.
 
 ## Tools
 
@@ -57,7 +58,7 @@ Die Kommunikation läuft über die offizielle, von AVM dokumentierte
 | Tool | Beschreibung |
 |------|-------------|
 | `list_call_barrings` | Alle gesperrten Rufnummern mit `uniqueid`. |
-| `get_call_barring` | Sperreintrag zu einer Nummer nachschlagen. |
+| `get_call_barring` | Sperreintrag zu einer Nummer nachschlagen (`blocked: false`, wenn die Nummer nicht gesperrt ist). |
 | `add_call_barring` ✏️ | Eingehende Rufnummer sperren (optional mit Name). |
 | `remove_call_barring` ✏️ | Sperre per `uniqueid` oder Rufnummer entfernen. |
 
@@ -65,7 +66,7 @@ Die Kommunikation läuft über die offizielle, von AVM dokumentierte
 
 | Tool | Beschreibung |
 |------|-------------|
-| `list_call_forwardings` | Alle Rufumleitungen mit ID, Status, Typ (z. B. alle Anrufer / bestimmte Nummer / anonyme Anrufer), Modus (sofort / bei besetzt / verzögert ...) und Zielnummer. |
+| `list_call_forwardings` | Alle Rufumleitungen mit ID, Status, Typ (z. B. alle Anrufer / bestimmte Nummer / anonyme Anrufer), Modus (sofort / bei besetzt / verzögert ...) und Zielnummer. `kind` ist `forward` oder `block`: FRITZ!OS führt über die Weboberfläche angelegte Rufsperren intern als Umleitung mit Modus "nicht signalisieren". |
 | `get_call_forwarding` | Details einer Rufumleitung. |
 | `set_call_forwarding_enabled` ✏️ | Rufumleitung ein-/ausschalten. |
 

@@ -89,8 +89,11 @@ Assistent die Ursache (falsche Zugangsdaten, fehlende Rechte, ungültiger Index,
   (Telefonie → Rufbehandlung → Rufumleitung), dann per Claude ein-/ausschalten.
 - Rufsperren für **ausgehende** Rufnummernbereiche (0900, Ausland, ...) — TR-064 kennt nur die
   Sperrliste für eingehende Rufnummern.
-- Sprachnachrichten in Text umwandeln. `download_voicemail` legt die Aufnahme als Datei ab; die
-  Transkription muss ein anderes Werkzeug übernehmen.
+- Sprachnachrichten in Text umwandeln. `download_voicemail` legt die Aufnahme als WAV-Datei ab; die
+  Transkription übernimmt z. B. [holy-moly-mcp](https://github.com/the78mole/holy-moly-mcp) mit
+  seinem Tool `convert_speech_to_text` (lokal per faster-whisper, kein API-Key nötig). Beide Server
+  zusammen eingebunden, kann Claude den AB komplett abhören: Nachricht laden, transkribieren,
+  zusammenfassen.
 
 ## Voraussetzungen auf der FRITZ!Box
 

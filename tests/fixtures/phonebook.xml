@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<phonebooks>
+  <phonebook owner="0" name="Telefonbuch">
+    <timestamp>1700000001</timestamp>
+    <contact>
+      <category>1</category>
+      <person>
+        <realName>Max Mustermann</realName>
+      </person>
+      <telephony>
+        <services>
+          <email classifier="private">max@example.com</email>
+        </services>
+        <number type="work" quickdial="1" vanity="" prio="0">030399760</number>
+        <number type="mobile" quickdial="" vanity="" prio="1">0171 234 5678</number>
+      </telephony>
+      <uniqueid>1234</uniqueid>
+    </contact>
+    <contact>
+      <category/>
+      <person>
+        <realName>Elektro Glaser</realName>
+      </person>
+      <telephony>
+        <services>
+        </services>
+        <number type="work" quickdial="" vanity="" prio="0">+49 9999 123456</number>
+      </telephony>
+      <uniqueid>1235</uniqueid>
+    </contact>
+  </phonebook>
+</phonebooks>

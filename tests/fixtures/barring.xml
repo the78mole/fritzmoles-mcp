@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<phonebooks>
+  <phonebook name="Rufsperre">
+    <timestamp>1700000000</timestamp>
+    <contact>
+      <category>0</category>
+      <person>
+        <realName>Werbung</realName>
+      </person>
+      <telephony>
+        <number type="home" prio="1" id="0">0800111222</number>
+      </telephony>
+      <uniqueid>42</uniqueid>
+    </contact>
+    <contact>
+      <category>0</category>
+      <person>
+        <realName>Callcenter</realName>
+      </person>
+      <telephony>
+        <number type="home" prio="1" id="0">+49 30 999 888</number>
+        <number type="mobile" prio="0" id="1">01709998887</number>
+      </telephony>
+      <uniqueid>43</uniqueid>
+    </contact>
+  </phonebook>
+</phonebooks>

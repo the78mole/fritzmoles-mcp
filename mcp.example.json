@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "fritzmoles": {
+      "command": "uvx",
+      "args": ["fritzmoles-mcp"],
+      "env": {
+        "FRITZ_HOST": "fritz.box",
+        "FRITZ_USERNAME": "fritz1234",
+        "FRITZ_PASSWORD": "..."
+      }
+    }
+  }
+}

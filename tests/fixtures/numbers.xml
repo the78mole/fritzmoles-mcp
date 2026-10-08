@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<List>
+  <Item>
+    <Number>0123456789</Number>
+    <Type>eVoIP</Type>
+    <Index>0</Index>
+    <Name>Büro</Name>
+  </Item>
+  <Item>
+    <Number>0123456790</Number>
+    <Type>eVoIP</Type>
+    <Index>1</Index>
+    <Name>Fax</Name>
+  </Item>
+</List>

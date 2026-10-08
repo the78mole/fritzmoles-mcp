@@ -1,0 +1,22 @@
+<List>
+  <Item>
+    <DeflectionId>0</DeflectionId>
+    <Enable>1</Enable>
+    <Type>fromNumber</Type>
+    <Number>12345</Number>
+    <DeflectionToNumber>987456</DeflectionToNumber>
+    <Mode>eImmediately</Mode>
+    <Outgoing>0</Outgoing>
+    <PhonebookID></PhonebookID>
+  </Item>
+  <Item>
+    <DeflectionId>1</DeflectionId>
+    <Enable>0</Enable>
+    <Type>fromAll</Type>
+    <Number></Number>
+    <DeflectionToNumber>1234679</DeflectionToNumber>
+    <Mode>eBusy</Mode>
+    <Outgoing></Outgoing>
+    <PhonebookID></PhonebookID>
+  </Item>
+</List>

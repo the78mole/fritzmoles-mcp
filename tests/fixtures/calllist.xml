@@ -1,0 +1,64 @@
+<?xml version="1.0"?>
+<root>
+  <timestamp>123456</timestamp>
+  <Call>
+    <Id>123</Id>
+    <Type>3</Type>
+    <Called>0123456789</Called>
+    <Caller>SIP: 98765</Caller>
+    <CallerNumber>98765</CallerNumber>
+    <Name>Max Mustermann</Name>
+    <Numbertype/>
+    <Device>Mobilteil 1</Device>
+    <Port>10</Port>
+    <Date>23.09.11 08:13</Date>
+    <Duration>0:01</Duration>
+    <Count/>
+    <Path/>
+  </Call>
+  <Call>
+    <Id>122</Id>
+    <Type>1</Type>
+    <Caller>012456789</Caller>
+    <Called>SIP: 56789</Called>
+    <CalledNumber>98765</CalledNumber>
+    <Name>Max Mustermann</Name>
+    <Numbertype/>
+    <Device>Anrufbeantworter 1</Device>
+    <Port>40</Port>
+    <Date>22.09.11 14:19</Date>
+    <Duration>0:01</Duration>
+    <Count/>
+    <Path>/download.lua?path=/var/media/ftp/USB/FRITZ/voicebox/rec/rec.0.000</Path>
+  </Call>
+  <Call>
+    <Id>121</Id>
+    <Type>2</Type>
+    <Caller>0301234567</Caller>
+    <Called>SIP: 56789</Called>
+    <CalledNumber>98765</CalledNumber>
+    <Name></Name>
+    <Numbertype>sip</Numbertype>
+    <Device></Device>
+    <Port></Port>
+    <Date>21.09.11 09:00</Date>
+    <Duration>0:00</Duration>
+    <Count>2</Count>
+    <Path/>
+  </Call>
+  <Call>
+    <Id>120</Id>
+    <Type>10</Type>
+    <Caller>0800111222</Caller>
+    <Called>SIP: 56789</Called>
+    <CalledNumber>98765</CalledNumber>
+    <Name>Werbung</Name>
+    <Numbertype>sip</Numbertype>
+    <Device></Device>
+    <Port>5</Port>
+    <Date>20.09.11 10:30</Date>
+    <Duration>0:00</Duration>
+    <Count/>
+    <Path/>
+  </Call>
+</root>

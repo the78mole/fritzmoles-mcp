@@ -1,0 +1,206 @@
+# IMPORTANT: this filename ("pypi-publish.yml") must be exactly what is
+# configured in PyPI's Trusted Publisher settings for this package, together
+# with the environment name "pypi" below. The OIDC publish step must live in
+# this top-level workflow file - do NOT move it into a reusable workflow.
+
+name: Create Release and Publish to PyPI
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'src/**'
+      - 'pyproject.toml'
+      - 'uv.lock'
+      - '.github/workflows/pypi-publish.yml'
+  workflow_dispatch:
+    inputs:
+      publish_target:
+        description: 'Publish target'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - pypi-only
+          - none
+
+jobs:
+  version:
+    name: Calculate Version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.semver.outputs.version }}
+      version_tag: ${{ steps.semver.outputs.version_tag }}
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Calculate semantic version
+        id: semver
+        uses: paulhatch/semantic-version@v6.0.4
+        with:
+          tag_prefix: "v"
+          major_pattern: "/(feat|fix|refactor)!:/"
+          minor_pattern: "/^feat:/"
+          version_format: "${major}.${minor}.${patch}"
+          bump_each_commit: true
+          search_commit_body: true
+
+      - name: Show version
+        run: |
+          echo "Version: ${{ steps.semver.outputs.version }}"
+          cat >> $GITHUB_STEP_SUMMARY <<EOF
+          ## 📦 Neue Version berechnet
+
+          **Version:** \`${{ steps.semver.outputs.version }}\`
+          **Git-Tag:** \`${{ steps.semver.outputs.version_tag }}\`
+          EOF
+
+  create-release:
+    name: Create GitHub Release
+    needs: [version]
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Create Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create ${{ needs.version.outputs.version_tag }} \
+            --title "fritzmoles-mcp ${{ needs.version.outputs.version }}" \
+            --generate-notes \
+            --notes "## fritzmoles-mcp ${{ needs.version.outputs.version }}
+
+          MCP server for the telephony features of a FRITZ!Box (call lists, answering machine, call barring, call forwarding).
+
+          ### Installation
+
+          \`\`\`bash
+          uvx fritzmoles-mcp==${{ needs.version.outputs.version }}
+          \`\`\`
+          " \
+            --latest
+
+          cat >> $GITHUB_STEP_SUMMARY <<EOF
+          ## 🏷️ GitHub Release erstellt
+
+          **Release:** [${{ needs.version.outputs.version_tag }}](https://github.com/${{ github.repository }}/releases/tag/${{ needs.version.outputs.version_tag }})
+          EOF
+
+  build:
+    name: Build fritzmoles-mcp distribution
+    needs: [version]
+    if: |
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'workflow_dispatch' &&
+       (github.event.inputs.publish_target == 'all' || github.event.inputs.publish_target == 'pypi-only'))
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      - name: Install build dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install build twine
+
+      - name: Set package version
+        # pyproject.toml carries a static `version = "..."`; `hatch version`
+        # refuses to change that, so the line is rewritten directly.
+        run: |
+          python3 -c "
+          import re, pathlib
+          path = pathlib.Path('pyproject.toml')
+          text = path.read_text()
+          new_text, count = re.subn(r'(?m)^version = \"[^\"]*\"', 'version = \"${{ needs.version.outputs.version }}\"', text, count=1)
+          assert count == 1, 'expected exactly one version = \"...\" line in [project]'
+          path.write_text(new_text)
+          "
+          grep '^version = ' pyproject.toml
+
+      - name: Build package
+        run: python -m build
+
+      - name: Check distribution
+        run: |
+          twine check dist/*
+          cat >> $GITHUB_STEP_SUMMARY <<EOF
+          ## 🔨 fritzmoles-mcp Build
+
+          **Version:** \`${{ needs.version.outputs.version }}\`
+          \`\`\`
+          $(ls -lh dist/)
+          \`\`\`
+          EOF
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: fritzmoles-mcp-dist
+          path: dist/
+
+  publish:
+    name: Publish fritzmoles-mcp to PyPI
+    needs: [version, build]
+    runs-on: ubuntu-latest
+
+    environment:
+      name: pypi
+      url: https://pypi.org/p/fritzmoles-mcp
+
+    permissions:
+      id-token: write
+
+    steps:
+      - name: Download distributions
+        uses: actions/download-artifact@v8
+        with:
+          name: fritzmoles-mcp-dist
+          path: dist/
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+
+      - name: Add PyPI Summary
+        run: |
+          cat >> $GITHUB_STEP_SUMMARY <<EOF
+          ## 🚀 fritzmoles-mcp PyPI Veröffentlichung
+
+          **Package:** [fritzmoles-mcp](https://pypi.org/project/fritzmoles-mcp/)
+          **Version:** \`${{ needs.version.outputs.version }}\`
+          EOF
+
+  summary:
+    name: Release Summary
+    needs: [version, create-release, build, publish]
+    if: always()
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Create Summary
+        run: |
+          cat >> $GITHUB_STEP_SUMMARY <<EOF
+          ## 🎉 Release Workflow Abgeschlossen
+
+          **Version:** \`${{ needs.version.outputs.version }}\`
+          **Git Tag:** \`${{ needs.version.outputs.version_tag }}\`
+
+          ### Status
+
+          - GitHub Release: ${{ needs.create-release.result == 'success' && '✅' || needs.create-release.result == 'skipped' && '⏭️' || '❌' }}
+          - PyPI Publish: ${{ needs.publish.result == 'success' && '✅' || needs.publish.result == 'skipped' && '⏭️' || '❌' }}
+          EOF
